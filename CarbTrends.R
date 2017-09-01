@@ -1,9 +1,6 @@
 ##################################################################################################################
-# Data visualization and statistics on the Iranian and Chinese del13C Permian-Triassic stratigraphic profiles
-# Construction of Figures 1, 3 and 4 is followed by Figure 2 and are presented in the work titled; Latest Permian 
-# stable carbon isotope variability traces heterogeneous organic carbon accumulation and authigenic carbonate 
-# formation, published in ... This R script is complemented by a diagenetic model named; CarDiaModel.R, which 
-# is required to construct the Figures 5, 6 and 8 of the same work.
+# Data visualization and statistics on the Iranian and Chinese del13C Permian-Triassic stratigraphic profiles 
+# Construction of Figures 1, 3 and 4 is followed by Figure 2 and are presented in the work titled; Latest Permian stable carbon isotope variability traces heterogeneous organic carbon accumulation and authigenic carbonate formation, published in Climate of the Past Discussions. This R script is complemented by a diagenetic model named; CarDiaModel.R, which is required to construct the Figures 5, 6 and 8 of the same work.
 ######################################################################################################################
 
 # required packages
@@ -11,6 +8,7 @@ library(ggplot2)    # for data plotting
 library(plyr)       # for split array-apply functions
 library(reshape2)   # for melting of a dataframe
 library(gridExtra)  # for multi-graph option
+library(grid)       # grid.draw-function
 
 
 # =============================================================================
@@ -44,7 +42,7 @@ K<-c(1438,  NA, NA, NA, NA, NA, NA,  4113, 0.30)
 
 CONO<-rbind(A, B, C, D, E, F, G, H, I, J, K) # biozone lower boundaries, cm relative to the base of the Boundary Clay, encountered in P-Tr profiles situated in China as well as Iran 
 
-colnames(CONO)<-c(unique(as.character(PTr$locality)), "Duration") # data frame consisting of the FAD and LAD of conodont specimes marking conodont zones, here represented as capital letters. The boundary represents the lower (oldest) boundary of the biozone. Last column refers
+colnames(CONO)<-c(unique(as.character(PTr$locality)), "Duration") # data frame consisting of the FAD and LAD of conodont specimens marking conodont zones, here represented as capital letters. The boundary represents the lower (oldest) boundary of the biozone. Last column refers
 
 DUR<-CONO[,9] # biozone durations [My]
 CONO<-CONO[,-9] # biozone stratigraphic height [cm]
@@ -58,17 +56,17 @@ rownames(THICK)<-c("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K")
 dim_height<-c()
 
 for(i in c(1:nrow(PTr))){# 
-
-dim_height<-c(dim_height,
-((PTr$height[i]-CONO[as.character(PTr$biozone.label[i]),as.character(PTr$locality[i])]) / (THICK[as.character(PTr$biozone.label[i]),as.character(PTr$locality[i])])))
-
+  
+  dim_height<-c(dim_height,
+                ((PTr$height[i]-CONO[as.character(PTr$biozone.label[i]),as.character(PTr$locality[i])]) / (THICK[as.character(PTr$biozone.label[i]),as.character(PTr$locality[i])])))
+  
 }# conversion of stratigraphic heights to dimensionless heights. The dimensionless height is assigned to the d13C values based on the relative distance towards the lower boundary of the corresponding biostratigraphic unit.
 
 PTr<-cbind(PTr, dim_height)
 
 #if(PTr$code[i] %in% rownames(CONO))
 
-  multiples <- # dimensionless heights additive
+multiples <- # dimensionless heights additive
   outer(PTr$biozone.label=="A", 0) +
   outer(PTr$biozone.label=="B", 1) +
   outer(PTr$biozone.label=="C", 2) +
@@ -81,7 +79,7 @@ PTr<-cbind(PTr, dim_height)
   outer(PTr$biozone.label=="J", 9) +
   outer(PTr$biozone.label=="K", 10) 
 
-dim_height2<-PTr$dim_height+multiples # cumulative straigraphic position of del13C on dimensionless time grid
+dim_height2<-PTr$dim_height+multiples # cumulative stratigraphic position of del13C on dimensionless time grid
 PTr<-cbind(PTr, dim_height2)
 PTr<-subset(PTr, dim_height2<12)
 
@@ -150,10 +148,9 @@ SampsizeBoot <- function(data,time, grid, windowsize){
 
 
 #---------------------------------------------------
-# setting up the grid for sliding timewindow 
-# subsampling
+# Setting-up the grid for sliding time window subsampling
 #---------------------------------------------------
-                                       
+
 grid.Iran    <- seq(0,10, 0.1)        # time grid Iran
 grid.China   <- seq(2,10, 0.1)        # time grid China
 windowsize   <- 1                     # size of sliding time window
@@ -164,7 +161,7 @@ size.Iran<-SampsizeBoot(data=Iran$del13C,time=Iran$dim_height2, grid=grid.Iran, 
 size.China<-SampsizeBoot(data=China$del13C,time=China$dim_height2, grid=grid.China , windowsize=windowsize) # China
 
 BootSlide <- function(n,data,time,grid,sampsize,windowsize,method){ 
-    
+  
   l0.boot <- matrix(NA, nrow=length(grid), ncol=n)
   
   for(i in 1:(length(grid))){
@@ -184,14 +181,14 @@ BootSlide <- function(n,data,time,grid,sampsize,windowsize,method){
         
         l0 <- method(data)
         if (is.na(l0)==TRUE) {
-        m1   <- method(boot, na.rm=TRUE)}else{
-          m1   <- method(boot)  
-        }
+          m1   <- method(boot, na.rm=TRUE)}else{
+            m1   <- method(boot)  
+          }
         l0.boot[i,t] <- m1}      
     }  
   } 
   return(l0.boot)
-}# this function represents the subsampling approach, giving both the complete set of subsamples as well as their corresponding summary statistics by adding the functions for the median, and the del13C value range of the interquartile range (IQR)-50% as well as the interpercentile range (IPR)-95 % of the sample population.
+}# this function represents the subsampling approach, giving both the complete set of subsamples as well as their corresponding summary statistics by adding the functions for the median, and the del13C value range of the interquartile range (IQR)-50% as well as the inter-percentile range (IPR)-95 % of the sample population.
 
 #---------------------------------------------------
 # Iran, subsampled and summary statistics
@@ -217,12 +214,11 @@ BootSum.China<-cbind(rbind(BootMed.China, BootIQR.China, BootIPR.China), c(rep("
 
 
 # =============================================================================
-# Construction of y-transect for visual weight (adapted from R code 
-# reported in blogs by Felix Sch?nbrodt, http://www.nicebread.de/, and Solomon 
-# Hsiang, http://www.fight-entropy.com/). Replication of the original licence, 
+# Construction of y-transect for visual weight (adapted from R code  reported in blogs by Felix Schonbrodt, http://www.nicebread.de/, and Solomon Hsiang, http://www.fight-entropy.com/). 
+# Replication of the original license, 
 # follows below;
 
-# Copyright 2012 Felix Sch?nbrodt
+# Copyright 2012 Felix Schonbrodt
 # All rights reserved.
 # 
 # FreeBSD License
@@ -266,56 +262,56 @@ BootSum.China<-cbind(rbind(BootMed.China, BootIQR.China, BootIPR.China), c(rep("
 
 
 colorWeight<-function(data, grid, ylim=c(-10, 10), slices=1000)  {        
-
-# Compute median and CI limits of bootstrap
-
-CI.boot<- adply(data, 1, function(x) quantile(x, prob=c(.025, .5, .975, pnorm(c(-3, -2, -1, 0, 1, 2, 3))), na.rm=TRUE))[, -1]
-colnames(CI.boot)[1:10] <- c("LL", "M", "UL", paste0("SD", 1:7))
-CI.boot$x <- grid
-CI.boot$width <- CI.boot$UL - CI.boot$LL
-
-# Scale the CI width to the range 0 to 1 and flip it (bigger numbers = narrower CI)
-
-CI.boot$w2 <- (CI.boot$width - min(CI.boot$width))
-CI.boot$w3 <- 1-(CI.boot$w2/max(CI.boot$w2))
-
-# Convert bootstrapped spaghettis to long format
-
-b2 <- melt(data)
-b2$x <- grid
-colnames(b2) <- c("index", "B", "value", "x")
-
-
+  
+  # Compute median and CI limits of bootstrap
+  
+  CI.boot<- adply(data, 1, function(x) quantile(x, prob=c(.025, .5, .975, pnorm(c(-3, -2, -1, 0, 1, 2, 3))), na.rm=TRUE))[, -1]
+  colnames(CI.boot)[1:10] <- c("LL", "M", "UL", paste0("SD", 1:7))
+  CI.boot$x <- grid
+  CI.boot$width <- CI.boot$UL - CI.boot$LL
+  
+  # Scale the CI width to the range 0 to 1 and flip it (bigger numbers = narrower CI)
+  
+  CI.boot$w2 <- (CI.boot$width - min(CI.boot$width))
+  CI.boot$w3 <- 1-(CI.boot$w2/max(CI.boot$w2))
+  
+  # Convert bootstrapped spaghettis to long format
+  
+  b2 <- melt(data)
+  b2$x <- grid
+  colnames(b2) <- c("index", "B", "value", "x")
+  
+  
+  
+  # Range and number of tiles used in ggplot
+  
+  ylim <- c(-10, 10)
+  slices <- 1000
+  
+  # Vertical cross-sectional density estimate
+  
+  d2 <- ddply(b2[, c("x", "value")], .(x), function(df) {
+    res <- data.frame(density(df$value, na.rm=TRUE, n=slices, from=ylim[1], to=ylim[2])[c("x", "y")])
     
-# Range and number of tiles used in ggplot
-      
-ylim <- c(-10, 10)
-slices <- 1000
-
-# Vertical cross-sectional density estimate
-    
-d2 <- ddply(b2[, c("x", "value")], .(x), function(df) {
-      res <- data.frame(density(df$value, na.rm=TRUE, n=slices, from=ylim[1], to=ylim[2])[c("x", "y")])
-      
-      colnames(res) <- c("y", "dens")
-      return(res)
-    }, .progress="text")
-    
-    maxdens <- max(d2$dens)
-    mindens <- min(d2$dens)
-    d2$dens.scaled <- (d2$dens - mindens)/maxdens   
-    
-# Shading and coloring of density tiles
-
-    shade.alpha=.1 # should the CI shading fade out at the edges? (by reducing alpha; 0 = no alpha decrease, 0.1 = medium alpha decrease, 0.5 = strong alpha decrease)
-    
-
-# Tile approach
-    
-    d2$alpha.factor <- d2$dens.scaled^shade.alpha
-
- return(color=list(CI.boot, d2)) 
-} # function attrubuting a value that weighs color to the confidence interval of the median trend lines constructed by multiple permutations of the subsampling routine from above.
+    colnames(res) <- c("y", "dens")
+    return(res)
+  }, .progress="text")
+  
+  maxdens <- max(d2$dens)
+  mindens <- min(d2$dens)
+  d2$dens.scaled <- (d2$dens - mindens)/maxdens   
+  
+  # Shading and coloring of density tiles
+  
+  shade.alpha=.1 # should the CI shading fade out at the edges? (by reducing alpha; 0 = no alpha decrease, 0.1 = medium alpha decrease, 0.5 = strong alpha decrease)
+  
+  
+  # Tile approach
+  
+  d2$alpha.factor <- d2$dens.scaled^shade.alpha
+  
+  return(color=list(CI.boot, d2)) 
+} # function attributing a value that weighs color to the confidence interval of the median trend lines constructed by multiple permutations of the subsampling routine from above.
 
 #---------------------------------------------------
 # Execution of the visual weight on the combined datasets 
@@ -346,10 +342,10 @@ color.sum.China<-cbind(rbind((colorMed.China[[2]]), (colorIQR.China[[2]]), (colo
 theme=theme_set(theme_classic()) 
 
 #---------------------------------------------------
-# stratigraphic del13C plot
+# Stratigraphic del13C plot
 #---------------------------------------------------
 
-#Iran
+# Iran
 I<-ggplot(colorMed.Iran[[1]], aes(x=x, y=M))+
   
   # Annotation for the extinction horizon
@@ -360,8 +356,8 @@ I<-ggplot(colorMed.Iran[[1]], aes(x=x, y=M))+
   # Annotation for the Permian-Triassic boundary
   
   geom_vline(xintercept=7, lty=1)+
- 
-  # Annotation for the sealevel changes
+  
+  # Annotation for the sea-level changes
   
   geom_rect(aes(xmax=SB1, xmin=0, ymax=10, ymin=8), fill="grey")+
   geom_rect(aes(xmax=11, xmin=SB1, ymax=10, ymin=8))+
@@ -372,51 +368,53 @@ I<-ggplot(colorMed.Iran[[1]], aes(x=x, y=M))+
   
   annotate("text", label= "Iran", x = 10, y = 7, size=4, fontface="bold")+
   
-  # Trend line  
-    
-  geom_line(color="black")+
-  
-  # Simulated seawater DIC-del13C line, requires times series simulation (CarbDiaModel.R)
-  
-  #geom_line(data=TimeSeries.sw.Iran, aes(x=grid, y=d13C.sw), linetype=2, color="blue")+
-  
   # Data points
   
   geom_point(aes(x=dim_height2, y=del13C, colour=label), data=Iran, shape=1)+
   
+  # Trend line  
+  
+  geom_line(color="black")+
+  
+  # Simulated seawater DIC-del13C line, requires times series simulation (CarbDiaModel.R)
+  
+  #geom_line(data=TimeSeries.sw.Iran[1:101,], aes(x=grid.Iran, y=d13C.sw), linetype=2, color="blue")+
+  
+  
+  
   # Axis
   
   scale_y_continuous(limits=c(-10, 10), expand = c(0, 0))+
-  ylab(expression(atop(paste(delta^13*C~"(\211 VPDB)"))))+
-  labs(title= "a")+
+  ylab(expression(atop(paste(delta^13*C~"(\u2030 VPDB)"))))+
+  labs(title= "(a)")+
   
   # Overwrites the labels for the aes x to create the names of the conodont zones 
   
   scale_x_discrete("biozones", limits=seq(0, 11,1) , expand = c(0, 0), labels=c("",paste(LETTERS[1:11])))+ 
   coord_cartesian(xlim=seq(0, 11,1))+
-    
+  
   theme(
-      axis.line.x = element_blank(), 
-      axis.ticks.x = element_blank(),
-      axis.line.y = element_line(color = "black"),
-      legend.title = element_blank(), 
-      panel.grid.major = element_blank(),
-      panel.grid.minor = element_blank(),
-      
-      legend.text = element_text(size=5), 
-      legend.position = c(0.25,0.26), 
-      legend.key.size = unit(3,"mm"),
-      legend.background = element_blank(),
-      
-      axis.text.x  = element_blank(), 
-      axis.title.x  = element_blank(), 
-      axis.text.y = element_text(size=7), 
-      axis.title.y = element_text(size =7),
-      plot.title = element_text(hjust=(0), size=9) )  
+    axis.line.x = element_blank(), 
+    axis.ticks.x = element_blank(),
+    axis.line.y = element_line(color = "black"),
+    legend.title = element_blank(), 
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
     
+    legend.text = element_text(size=5), 
+    legend.position = c(0.25,0.26), 
+    legend.key.size = unit(3,"mm"),
+    legend.background = element_blank(),
     
-    
-    
+    axis.text.x  = element_blank(), 
+    axis.title.x  = element_blank(), 
+    axis.text.y = element_text(size=7), 
+    axis.title.y = element_text(size =7),
+    plot.title = element_text(hjust=(0), size=9) )  
+
+
+
+
 # China    
 C<-ggplot(colorMed.China[[1]], aes(x=x, y=M))+
   
@@ -428,6 +426,10 @@ C<-ggplot(colorMed.China[[1]], aes(x=x, y=M))+
   
   geom_vline(xintercept=7, lty=1)+
   
+  # Data points
+  
+  geom_point(aes(x=dim_height2, y=del13C, colour=label), data=China, shape=1)+
+  
   # Trend line  
   
   geom_line(color="black")+
@@ -436,15 +438,12 @@ C<-ggplot(colorMed.China[[1]], aes(x=x, y=M))+
   
   #geom_line(data=TimeSeries.sw.China, aes(x=grid, y=d13C.sw), linetype=2, color="blue")+
   
-  # Data points
-  
-  geom_point(aes(x=dim_height2, y=del13C, colour=label), data=China, shape=1)+
   
   # Axis
   
   scale_y_continuous(limits=c(-10, 10), expand = c(0, 0))+
-  ylab(expression(atop(paste(delta^13*C~"(\211 VPDB)"))))+
-  labs(title= "b")+  
+  ylab(expression(atop(paste(delta^13*C~"(\u2030 VPDB)"))))+
+  labs(title= "(b)")+  
   
   # Geographic location
   
@@ -455,8 +454,8 @@ C<-ggplot(colorMed.China[[1]], aes(x=x, y=M))+
   
   scale_x_discrete("biozones", limits=seq(0, 11,1) , expand = c(0, 0), labels=c("",paste(LETTERS[1:11])))+ 
   coord_cartesian(xlim=seq(0, 11,1))+
-
-
+  
+  
   # Chronological boxes for the systems
   
   geom_rect(aes(xmax=bounds.system[1], xmin=0, ymax=-9, ymin=-10), fill=strat.colors.system[2])+
@@ -464,7 +463,7 @@ C<-ggplot(colorMed.China[[1]], aes(x=x, y=M))+
   
   annotate("text", label=bounds.system.label, x=bounds.system.pos, y=-9.5, size=3.5)+
   
-  # chronological boxes for the stages
+  # Chronological boxes for the stages
   
   geom_rect(aes(xmax=bounds.stage[1], xmin=0,  ymax=-8, ymin=-9), fill=strat.colors.stage[3])+
   geom_rect(aes(xmax=bounds.stage[2], xmin=bounds.stage[1],  ymax=-8, ymin=-9), fill=strat.colors.stage[2])+
@@ -489,33 +488,33 @@ C<-ggplot(colorMed.China[[1]], aes(x=x, y=M))+
     axis.text.y = element_text(size=7), 
     axis.title.y = element_text(size =7),
     plot.title = element_text(hjust=(0), size=9))
-    
-  
-  
-  # This guide transforms the aes-fill (sections) to two columns
 
-  I<-I+guides(colour=guide_legend(ncol=2))
-  C<-C+guides(colour=guide_legend(ncol=2))
-  
-  
-  # Code to override clipping
-  
-  gI <- ggplot_gtable(ggplot_build(I))
-  gI$layout$clip[gI$layout$name == "panel"] <- "off"
-  grid.draw(gI)
-  
-  
-  gC <- ggplot_gtable(ggplot_build(C))
-  gC$layout$clip[gC$layout$name == "panel"] <- "off"
-  grid.draw(gC)
-  
+
+
+# This guide transforms the aes-fill (sections) to two columns
+
+I<-I+guides(colour=guide_legend(ncol=2))
+C<-C+guides(colour=guide_legend(ncol=2))
+
+
+# Code to override clipping
+
+gI <- ggplot_gtable(ggplot_build(I))
+gI$layout$clip[gI$layout$name == "panel"] <- "off"
+grid.draw(gI)
+
+
+gC <- ggplot_gtable(ggplot_build(C))
+gC$layout$clip[gC$layout$name == "panel"] <- "off"
+grid.draw(gC)
+
 
 # Printing
-  
+
 grid.arrange(gI, gC, nrow=2) 
 
 D13C<-arrangeGrob(gI, gC, nrow=2) 
-  
+
 ggsave("Figure1.pdf", D13C, height= 16, width=16, units="cm" )
 
 
@@ -534,12 +533,12 @@ Ic<-ggplot(CI.sum.Iran, aes(x=x, y=M,  alpha=w3^3))+
   # Annotation for the extinction horizon
   
   geom_vline(xintercept=6, lty=2)+
-
+  
   # Annotation for the Permian-Triassic boundary
   
   geom_vline(xintercept=7, lty=1)+
-
-  # Smoothed trendline
+  
+  # Smoothed trend line
   
   geom_tile(data=color.sum.Iran, aes(x=x, y=y, fill=dens.scaled, alpha=alpha.factor))+
   scale_fill_gradientn("dens.scaled", colours=palette, guide=FALSE)+ 
@@ -548,7 +547,7 @@ Ic<-ggplot(CI.sum.Iran, aes(x=x, y=M,  alpha=w3^3))+
   
   # Axis  
   
-  ylab(expression(atop(paste(delta^13*C~"(\211 VPDB)"))))+
+  ylab(expression(atop(paste(delta^13*C~"(\u2030 VPDB)"))))+
   
   scale_y_continuous(limits=c(-10, 10), expand = c(0, 0))+
   
@@ -573,8 +572,6 @@ Ic<-ggplot(CI.sum.Iran, aes(x=x, y=M,  alpha=w3^3))+
   
   
   theme(
-    axis.line.x = element_line(color = "black"), 
-    axis.line.y = element_line(color = "black"),
     legend.title = element_blank(), 
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
@@ -606,7 +603,7 @@ Cc<-ggplot(CI.sum.China, aes(x=x, y=M,  alpha=w3^3))+
   
   geom_vline(xintercept=7, lty=1)+
   
-  # Smoothed trendline
+  # Smoothed trend line
   
   geom_tile(data=color.sum.China, aes(x=x, y=y, fill=dens.scaled, alpha=alpha.factor))+
   scale_fill_gradientn("dens.scaled", colours=palette, guide=FALSE)+ 
@@ -615,7 +612,7 @@ Cc<-ggplot(CI.sum.China, aes(x=x, y=M,  alpha=w3^3))+
   
   # Axis  
   
-  ylab(expression(atop(paste(delta^13*C~"(\211 VPDB)"))))+
+  ylab(expression(atop(paste(delta^13*C~"(\u2030 VPDB)"))))+
   scale_y_continuous(limits=c(-10, 10), expand = c(0, 0))+
   
   # Overwrites the labels for the aes x to create the names of the conodont zones 
@@ -639,8 +636,6 @@ Cc<-ggplot(CI.sum.China, aes(x=x, y=M,  alpha=w3^3))+
   
   
   theme(
-    axis.line.x = element_line(color = "black"), 
-    axis.line.y = element_line(color = "black"),
     legend.title = element_blank(), 
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
@@ -665,6 +660,9 @@ Cc<-ggplot(CI.sum.China, aes(x=x, y=M,  alpha=w3^3))+
 #---------------------------------------------------
 
 
+
+
+
 # Data frame conversion
 med.THICK.Iran<-data.frame(median=apply(THICK[,c(1:7)],1, median, na.rm=TRUE), dim_height2=c(1:11), y=rep(1,11))
 med.THICK.China<-data.frame(median=THICK[,8], dim_height2=c(1:11), y=rep(1,11))
@@ -686,7 +684,6 @@ tI<-ggplot(med.THICK.Iran, aes(x=dim_height2, y=y,  fill=median))+
     legend.title = element_blank(), 
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
-    axis.line.x=element_blank(),
     legend.text = element_text(size=5), 
     legend.position = c(0.18,0.29), 
     legend.key.size = unit(3,"mm"),
@@ -711,7 +708,6 @@ tC<-ggplot(med.THICK.China, aes(x=dim_height2, y=y,  fill=median))+
     legend.title = element_blank(), 
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
-    axis.line.x=element_blank(),
     legend.text = element_text(size=5), 
     legend.position = c(0.18,0.29), 
     legend.key.size = unit(3,"mm"),
@@ -775,7 +771,7 @@ ggsave("Figure3.pdf", g,  height= 6, width=8, units="in")
 
 
 # =============================================================================
-# Comparitive analyses of the (first-order) median trends recorded at 
+# Comparative analyses of the (first-order) median trends recorded at 
 # Meishan and Abadeh during multiple sampling expeditions (Figure 2)
 # =============================================================================
 
@@ -783,7 +779,7 @@ ggsave("Figure3.pdf", g,  height= 6, width=8, units="in")
 C.int<-dlply(China, ~label , summarize, apply(BootSlide(n=999, data=del13C, time=dim_height2, grid=grid.China, windowsize=windowsize, method=median),1, FUN=median)) # obtaining trend lines for seperate studies on the Meishan profile
 
 A.int<-dlply(Iran[which(Iran$locality=="Abadeh"),], ~label , summarize, apply(BootSlide(n=999, data=del13C, time=dim_height2, grid=grid.Iran, windowsize=windowsize, method=median),1, FUN=median)) # obtaining trend lines for seperate studies on the Abadeh profile
-                                                                             
+
 
 # Correlation of obtained firs-order trends Abadeh
 
@@ -792,16 +788,16 @@ k<-matrix(NA, nrow=length(unique((Iran[which(Iran$locality=="Abadeh"),])$label))
 for(i in c(1:length(unique((Iran[which(Iran$locality=="Abadeh"),])$label)))){
   
   for(l in c(1:length(unique((Iran[which(Iran$locality=="Abadeh"),])$label)))){
-  
-  t<-data.frame(t1=unlist(A.int[[i]]), t2=unlist(A.int[[l]]))
-  
-  good<-complete.cases(t$t1,t$t2)
-  
-  if(nrow(t[good,])==0){ k[i,l]<-NA}else{
     
-  k[i,l]<-summary(lm(t1~t2, data=t, singular.ok = TRUE))$r.squared }
-  
-  
+    t<-data.frame(t1=unlist(A.int[[i]]), t2=unlist(A.int[[l]]))
+    
+    good<-complete.cases(t$t1,t$t2)
+    
+    if(nrow(t[good,])==0){ k[i,l]<-NA}else{
+      
+      k[i,l]<-summary(lm(t1~t2, data=t, singular.ok = TRUE))$r.squared }
+    
+    
   }}
 
 k[k==0] <-NA 
@@ -845,7 +841,7 @@ m<-cbind(m, name=rep(unique(China$label), length(unique(China$label))))
 
 
 
-# Comparitive plot Abadeh 
+# Comparative plot Abadeh 
 Com.TA<-ggplot(k, aes(variable, name)) + geom_tile(aes(fill = value),colour = "white")+  
   # reshape plot to match size of Meishan plot
   geom_rect(aes(xmin=0.5,xmax=13.5, ymin=0.5, ymax=13.5), color="white", fill=NA)+ 
@@ -864,8 +860,8 @@ Com.TA<-ggplot(k, aes(variable, name)) + geom_tile(aes(fill = value),colour = "w
         legend.text =element_text(size=7),
         axis.line = element_blank(),
         plot.margin=unit(c(0,0,1,0),"cm"))
-  
-# Comparitive plot Meishan 
+
+# Comparative plot Meishan 
 Com.TM<-ggplot(m, aes(variable, name)) + geom_tile(aes(fill = value),colour = "white")+  
   # outline of plot area 
   geom_rect(aes(xmin=0.5,xmax=13.5, ymin=0.5, ymax=13.5), color="black", fill=NA)+
@@ -873,20 +869,20 @@ Com.TM<-ggplot(m, aes(variable, name)) + geom_tile(aes(fill = value),colour = "w
   scale_y_discrete(limits=unique(sort(China$label)))+
   scale_fill_gradient(expression("r"^2),low = "white",high = "steelblue", limits=c(0,1), breaks=c(0,0.5,1))+
   theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1, size=7),
-          axis.text.y = element_text(size =7),
-          axis.title.x = element_blank(),
-          axis.title.y = element_blank(),
-          legend.position = "none",   
-          axis.line = element_blank(),
-          plot.margin=unit(c(0,0,1,0),"cm"))
-                                                                                        
+        axis.text.y = element_text(size =7),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        legend.position = "none",   
+        axis.line = element_blank(),
+        plot.margin=unit(c(0,0,1,0),"cm"))
+
 # Equalizing plot heights
-  
+
 Abadeh<- ggplot_gtable(ggplot_build(Com.TA))  
 Meishan<- ggplot_gtable(ggplot_build(Com.TM))  
 
 Meishan$heights<- Abadeh$heights 
-    
+
 # Combining plots  
 
 
@@ -930,7 +926,7 @@ L.unit<-outer((ModelInput.Iran$x>=0 & ModelInput.Iran$x<=1), (med.THICK.Iran[med
   outer((ModelInput.Iran$x>8 & ModelInput.Iran$x<=9), (med.THICK.Iran[med.THICK.Iran$dim_height2==9,])$median)+
   outer((ModelInput.Iran$x>9 & ModelInput.Iran$x<=10), (med.THICK.Iran[med.THICK.Iran$dim_height2==10,])$median)
 
-ModelInput.Iran<-cbind(ModelInput.Iran, IQR=CI.sum.Iran[CI.sum.Iran$label=="IQR (50 %)",], IPR=CI.sum.Iran[CI.sum.Iran$label=="IPR (95%)",],  Age.unit, L.unit, v.unit=(L.unit/(Age.unit*1E6)))
+ModelInput.Iran<-cbind(ModelInput.Iran, IQR=CI.sum.Iran[CI.sum.Iran$label=="IQR (50 %)",], IPR=CI.sum.Iran[CI.sum.Iran$label=="IPR (95%)",],  Age.unit, L.unit )
 
 ModelInput.China<-CI.sum.China[CI.sum.China$label=="Median",]
 
@@ -946,7 +942,7 @@ Age.unit<-outer((ModelInput.China$x>=0 & ModelInput.China$x<=1), (DUR[DUR$x==1,]
   outer((ModelInput.China$x>9 & ModelInput.China$x<=10), (DUR[DUR$x==10,])$DUR)
 
 L.unit<-
- 
+  
   outer((ModelInput.China$x>=2 & ModelInput.China$x<=3), (med.THICK.China[med.THICK.China$dim_height2==3,])$median)+
   outer((ModelInput.China$x>3 & ModelInput.China$x<=4), (med.THICK.China[med.THICK.China$dim_height2==4,])$median)+
   outer((ModelInput.China$x>4 & ModelInput.China$x<=5), (med.THICK.China[med.THICK.China$dim_height2==5,])$median)+
@@ -956,7 +952,7 @@ L.unit<-
   outer((ModelInput.China$x>8 & ModelInput.China$x<=9), (med.THICK.China[med.THICK.China$dim_height2==9,])$median)+
   outer((ModelInput.China$x>9 & ModelInput.China$x<=10), (med.THICK.China[med.THICK.China$dim_height2==10,])$median)
 
-ModelInput.China<-cbind(ModelInput.China, IQR=CI.sum.China[CI.sum.China$label=="IQR (50 %)",], IPR=CI.sum.China[CI.sum.China$label=="IPR (95%)",],  Age.unit, L.unit, v.unit=(L.unit/(Age.unit*1E6)))
+ModelInput.China<-cbind(ModelInput.China, IQR=CI.sum.China[CI.sum.China$label=="IQR (50 %)",], IPR=CI.sum.China[CI.sum.China$label=="IPR (95%)",],  Age.unit, L.unit)
 
 ####################################################################################################################################
 ####################################################################################################################################

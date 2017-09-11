@@ -8,7 +8,7 @@ library(ggplot2)    # for data plotting
 library(plyr)       # for split array-apply functions
 library(reshape2)   # for melting of a dataframe
 library(gridExtra)  # for multi-graph option
-library(grid)       # grid.draw-function
+library(grid) # grid.draw-function
 
 
 # =============================================================================
@@ -385,7 +385,7 @@ I<-ggplot(colorMed.Iran[[1]], aes(x=x, y=M))+
   # Axis
   
   scale_y_continuous(limits=c(-10, 10), expand = c(0, 0))+
-  ylab(expression(atop(paste(delta^13*C~"(\u2030 VPDB)"))))+
+  ylab(expression(atop(paste(delta^13*C~"(\211 VPDB)"))))+
   labs(title= "(a)")+
   
   # Overwrites the labels for the aes x to create the names of the conodont zones 
@@ -442,7 +442,7 @@ C<-ggplot(colorMed.China[[1]], aes(x=x, y=M))+
   # Axis
   
   scale_y_continuous(limits=c(-10, 10), expand = c(0, 0))+
-  ylab(expression(atop(paste(delta^13*C~"(\u2030 VPDB)"))))+
+  ylab(expression(atop(paste(delta^13*C~"(\211 VPDB)"))))+
   labs(title= "(b)")+  
   
   # Geographic location
@@ -547,7 +547,7 @@ Ic<-ggplot(CI.sum.Iran, aes(x=x, y=M,  alpha=w3^3))+
   
   # Axis  
   
-  ylab(expression(atop(paste(delta^13*C~"(\u2030 VPDB)"))))+
+  ylab(expression(atop(paste(delta^13*C~"(\211 VPDB)"))))+
   
   scale_y_continuous(limits=c(-10, 10), expand = c(0, 0))+
   
@@ -612,7 +612,7 @@ Cc<-ggplot(CI.sum.China, aes(x=x, y=M,  alpha=w3^3))+
   
   # Axis  
   
-  ylab(expression(atop(paste(delta^13*C~"(\u2030 VPDB)"))))+
+  ylab(expression(atop(paste(delta^13*C~"(\211 VPDB)"))))+
   scale_y_continuous(limits=c(-10, 10), expand = c(0, 0))+
   
   # Overwrites the labels for the aes x to create the names of the conodont zones 
@@ -766,7 +766,7 @@ g<-arrangeGrob(arrangeGrob(arrangeGrob(empty, arrangeGrob(tI, D), empty, widths 
 
 
 
-ggsave("Figure3.pdf", g,  height= 6, width=8, units="in")
+ggsave("Figure2.pdf", g,  height= 6, width=8, units="in")
 
 
 
@@ -892,7 +892,7 @@ grid.arrange(Abadeh, Meishan, ncol=2)
 
 g<-arrangeGrob(Abadeh, Meishan, ncol=2)
 
-ggsave("Figure2.pdf", g,  height= 8, width=18, units="cm")
+ggsave("Figure3.pdf", g,  height= 8, width=18, units="cm")
 
 
 
